@@ -1,0 +1,8 @@
+# Carpeta de Logs
+
+Esta carpeta contendrá los logs del sistema:
+
+- `error.log` - Solo errores
+- `combined.log` - Todos los logs
+
+Los archivos de log se generan automáticamente cuando ejecutas la aplicación.
