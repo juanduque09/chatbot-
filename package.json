@@ -1,35 +1,43 @@
 {
   "name": "chatbot-recordatorios-citas",
-  "version": "1.0.0",
-  "description": "Sistema automatizado de recordatorios de citas médicas por WhatsApp",
+  "version": "2.0.0",
+  "description": "Sistema automatizado de recordatorios de citas médicas por WhatsApp - Meta Business API",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx test-example.ts",
-    "ejemplo": "tsx prueba-ejemplo.ts"
+    "test": "tsx src/test-system.ts",
+    "test:full": "tsx src/test-system.ts",
+    "test:send": "tsx src/test-system.ts",
+    "ejemplo": "tsx prueba-ejemplo.ts",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "db:stats": "tsx src/database/stats.ts"
   },
   "keywords": [
     "whatsapp",
+    "meta-api",
     "chatbot",
     "recordatorios",
     "citas",
-    "typescript"
+    "typescript",
+    "clinica"
   ],
-  "author": "",
+  "author": "Clínica Láser",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.0",
+    "better-sqlite3": "^9.6.0",
     "dayjs": "^1.11.10",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "node-cron": "^3.0.3",
-    "twilio": "^4.19.0",
     "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^4.17.21",
     "@types/node": "^20.10.5",
     "@types/node-cron": "^3.0.11",
