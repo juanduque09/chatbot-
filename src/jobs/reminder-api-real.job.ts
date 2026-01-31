@@ -74,8 +74,10 @@ function obtenerDireccion(sede: string): string {
 
 /**
  * Procesa una cita para enviar mensaje
+ * @param cita Cita del API
+ * @param fechaConsultada Fecha que SE CONSULTÓ (no confiar en cita.requerida del API)
  */
-function procesarCita(cita: any) {
+function procesarCita(cita: any, fechaConsultada: string) {
   // Extraer solo el primer nombre
   const nombreCompleto = cita.nombre || "";
   const primerNombre = nombreCompleto.split(" ")[0];
@@ -84,7 +86,7 @@ function procesarCita(cita: any) {
     citaId: cita.id,
     telefono: extraerPrimerTelefono(cita.telefono),
     nombre: primerNombre,
-    fecha: formatearFecha(cita.requerida),
+    fecha: formatearFecha(fechaConsultada), // ⭐ Usar fecha consultada, NO cita.requerida (tiene bug en API)
     hora: formatearHora(cita.hora, cita.ampm),
     medico: cita.medico,
     sede: cita.sede,
@@ -92,7 +94,7 @@ function procesarCita(cita: any) {
     tipo: cita.tipo || "CONSULTA",
     entidad: cita.entidad || "PARTICULAR",
     observacion: limpiarObservacion(cita.observacion),
-    fechaCita: cita.requerida,
+    fechaCita: fechaConsultada, // ⭐ Usar fecha consultada para guardar en BD
   };
 }
 
@@ -147,7 +149,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
 
     // 4. Filtrar citas que ya fueron enviadas (evitar duplicados)
     const citasSinEnviar = citasActivas.filter((cita) => {
-      return !yaSeEnvioMensaje(cita.id, cita.requerida);
+      return !yaSeEnvioMensaje(cita.id, manana); // ⭐ Usar fecha consultada, no cita.requerida
     });
 
     if (citasSinEnviar.length < citasActivas.length) {
@@ -170,7 +172,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
     let fallidos = 0;
 
     for (const cita of citasSinEnviar) {
-      const procesada = procesarCita(cita);
+      const procesada = procesarCita(cita, manana); // ⭐ Pasar fecha consultada
 
       // Verificar que tenga número válido
       if (!procesada.telefono) {
