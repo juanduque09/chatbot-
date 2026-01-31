@@ -4,7 +4,10 @@ import config from "./config/env";
 import logger from "./utils/logger";
 import metaWhatsappService from "./services/meta-whatsapp.service";
 import metaTemplateService from "./services/meta-template.service";
-import { iniciarCronJob, ejecutarManualmente } from "./jobs/reminder.job";
+import {
+  iniciarCronJob,
+  ejecutarRecordatorios,
+} from "./jobs/reminder-api-real.job";
 import {
   initDatabase,
   obtenerEstadisticasHoy,
@@ -75,7 +78,7 @@ app.post(
       logger.info("📞 Solicitud manual de ejecución de recordatorios");
 
       // Ejecutar en segundo plano
-      ejecutarManualmente().catch((error) => {
+      ejecutarRecordatorios().catch((error) => {
         logger.error("Error en ejecución manual:", error);
       });
 
@@ -92,7 +95,7 @@ app.post(
         message: "Error al ejecutar recordatorios",
       });
     }
-  }
+  },
 );
 
 /**
@@ -110,20 +113,20 @@ app.post("/api/prueba-whatsapp", async (req: Request, res: Response) => {
     }
 
     logger.info(
-      `🧪 Enviando mensaje de prueba a ${telefono} por Meta WhatsApp`
+      `🧪 Enviando mensaje de prueba a ${telefono} por Meta WhatsApp`,
     );
 
     // Si hay datos de cita completos, usar plantilla
     if (citaData.nombre && citaData.medico && citaData.sede) {
       const templateName = metaTemplateService.obtenerNombrePlantilla();
       const parametros = metaTemplateService.crearParametrosRecordatorio(
-        citaData as any
+        citaData as any,
       );
 
       const resultado = await metaWhatsappService.enviarMensajePlantilla(
         telefono,
         templateName,
-        parametros
+        parametros,
       );
 
       if (resultado.success) {
@@ -198,7 +201,7 @@ function iniciarServidor() {
     logger.info("✅ Meta WhatsApp Business API configurado correctamente");
   } else {
     logger.warn(
-      "⚠️  Meta WhatsApp NO configurado. Configura .env antes de usar."
+      "⚠️  Meta WhatsApp NO configurado. Configura .env antes de usar.",
     );
     logger.warn("📖 Lee docs/SETUP-META-WHATSAPP.md para instrucciones");
   }
@@ -214,7 +217,7 @@ function iniciarServidor() {
     logger.info(`   🌐 Servidor: http://localhost:${PORT}`);
     logger.info(`   📡 Health Check: http://localhost:${PORT}/health`);
     logger.info(
-      `   📊 Estadísticas: http://localhost:${PORT}/api/estadísticas`
+      `   📊 Estadísticas: http://localhost:${PORT}/api/estadísticas`,
     );
     logger.info("═══════════════════════════════════════════════════");
   });

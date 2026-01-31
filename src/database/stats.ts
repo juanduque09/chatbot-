@@ -1,6 +1,5 @@
 import { initDatabase, obtenerEstadisticasHoy } from "./db";
 import db from "./db";
-import logger from "../utils/logger";
 
 /**
  * Script para ver estadísticas de la base de datos

@@ -3,7 +3,6 @@ import path from "path";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import metaWhatsappService from "./services/meta-whatsapp.service";
-import metaTemplateService from "./services/meta-template.service";
 import { guardarMensaje } from "./database/db";
 
 dayjs.locale("es");
@@ -88,6 +87,22 @@ function limpiarObservacion(obs: string): string {
 }
 
 /**
+ * Obtiene la dirección según la sede
+ */
+function obtenerDireccion(sede: string): string {
+  const sedeUpper = sede.toUpperCase();
+
+  if (sedeUpper.includes("PEREIRA")) {
+    return "Av Circunvalar Carrera 13 #9-42";
+  } else if (sedeUpper.includes("DOSQUEBRADAS")) {
+    return "Carrera 16 #16-40 barrio valher";
+  }
+
+  // Fallback: retornar la sede como dirección
+  return sede;
+}
+
+/**
  * Procesa una cita y la convierte en parámetros para la plantilla
  */
 function procesarCita(cita: CitaAPI) {
@@ -99,6 +114,7 @@ function procesarCita(cita: CitaAPI) {
     hora: formatearHora(cita.hora, cita.ampm),
     medico: cita.medico,
     sede: cita.sede,
+    direccion: obtenerDireccion(cita.sede),
     consultorio: cita.consultorio,
     tipo: cita.tipo || "CONSULTA",
     entidad: cita.entidad || "PARTICULAR",
@@ -132,9 +148,13 @@ async function main() {
     return;
   }
 
-  // Usar la plantilla aprobada (sin observaciones por ahora)
-  const templateName = "recordatorio_cita_v1"; // Cambiar a "recordatorio_cita_con_obs_v1" cuando esté aprobada
+  // Usar la nueva plantilla completa v2 (PENDIENTE de aprobación ⏳)
+  const templateName = "recordatorio_cita_completo_v2";
   console.log(`📝 Usando plantilla: ${templateName}\n`);
+  console.log(`✅ Esta plantilla incluye dirección y observaciones\n`);
+  console.log(
+    `⚠️  Asegúrate de que la plantilla esté APROBADA antes de ejecutar\n`,
+  );
 
   let exitosos = 0;
   let fallidos = 0;
@@ -155,23 +175,22 @@ async function main() {
     console.log(`⏰ Hora:        ${procesada.hora}`);
     console.log(`👨‍⚕️ Médico:      ${procesada.medico}`);
     console.log(`🏢 Sede:        ${procesada.sede}`);
-    console.log(`🚪 Consultorio: ${procesada.consultorio}`);
+    console.log(`� Dirección:   ${procesada.direccion}`);
     console.log(`📋 Tipo:        ${procesada.tipo}`);
     console.log(`💳 Entidad:     ${procesada.entidad}`);
     console.log(`📝 Observación: ${procesada.observacion}`);
 
-    // Crear parámetros para la plantilla (8 parámetros para la plantilla actual)
-    // Cuando uses "recordatorio_cita_con_obs_v1", agrega: procesada.observacion como parámetro {{9}}
+    // Crear parámetros para la plantilla (9 parámetros CON dirección y observaciones)
     const parametros = [
-      procesada.nombre,
-      procesada.fecha,
-      procesada.hora,
-      procesada.medico,
-      procesada.sede,
-      procesada.consultorio,
-      procesada.tipo,
-      procesada.entidad,
-      // procesada.observacion, // Descomentar cuando uses recordatorio_cita_con_obs_v1
+      procesada.nombre, // {{1}}
+      procesada.fecha, // {{2}}
+      procesada.hora, // {{3}}
+      procesada.medico, // {{4}}
+      procesada.sede, // {{5}}
+      procesada.direccion, // {{6}} - NUEVO: Dirección
+      procesada.tipo, // {{7}}
+      procesada.entidad, // {{8}}
+      procesada.observacion, // {{9}} - Observaciones
     ];
 
     console.log(`\n📤 Enviando mensaje...`);
