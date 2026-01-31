@@ -122,23 +122,37 @@ export async function ejecutarRecordatorios(): Promise<void> {
 
     logger.info(`📊 Total de citas encontradas: ${citasManana.length}`);
 
-    // 3. Filtrar solo citas con teléfono
-    const citasConTelefono = citasManana.filter((c) => c.telefono);
-    logger.info(`📱 Citas con teléfono: ${citasConTelefono.length}`);
+    // 3. Filtrar solo citas con teléfono y que NO estén canceladas
+    const citasActivas = citasManana.filter((c) => {
+      const estadoLower = (c.estado || "").toLowerCase();
+      const estaCancelada =
+        estadoLower.includes("cancel") ||
+        estadoLower.includes("cancelo") ||
+        estadoLower === "cancelado" ||
+        estadoLower === "cancelada";
 
-    if (citasConTelefono.length === 0) {
-      logger.warn("⚠️  No hay citas con teléfono para enviar");
+      return c.telefono && !estaCancelada;
+    });
+
+    const citasCanceladas = citasManana.length - citasActivas.length;
+    logger.info(`📱 Citas activas con teléfono: ${citasActivas.length}`);
+    if (citasCanceladas > 0) {
+      logger.info(`🚫 Citas canceladas (omitidas): ${citasCanceladas}`);
+    }
+
+    if (citasActivas.length === 0) {
+      logger.warn("⚠️  No hay citas activas con teléfono para enviar");
       return;
     }
 
     // 4. Filtrar citas que ya fueron enviadas (evitar duplicados)
-    const citasSinEnviar = citasConTelefono.filter((cita) => {
+    const citasSinEnviar = citasActivas.filter((cita) => {
       return !yaSeEnvioMensaje(cita.id, cita.requerida);
     });
 
-    if (citasSinEnviar.length < citasConTelefono.length) {
+    if (citasSinEnviar.length < citasActivas.length) {
       logger.info(
-        `🔄 Se omitieron ${citasConTelefono.length - citasSinEnviar.length} citas (ya enviadas)`,
+        `🔄 Se omitieron ${citasActivas.length - citasSinEnviar.length} citas (ya enviadas)`,
       );
     }
 
