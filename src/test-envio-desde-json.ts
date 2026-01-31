@@ -136,12 +136,31 @@ async function main() {
 
   console.log(`📊 Total de citas en el JSON: ${jsonData.data.length}\n`);
 
-  // Filtrar citas con teléfono
-  const citasValidas = jsonData.data.filter((c: CitaAPI) => c.telefono);
-  console.log(`✅ Citas con teléfono: ${citasValidas.length}`);
+  // Filtrar citas con teléfono y que NO estén canceladas
+  const citasValidas = jsonData.data.filter((c: CitaAPI) => {
+    const estadoLower = (c.estado || "").toLowerCase();
+    const estaCancelada =
+      estadoLower.includes("cancel") ||
+      estadoLower.includes("cancelo") ||
+      estadoLower === "cancelado" ||
+      estadoLower === "cancelada";
+
+    return c.telefono && !estaCancelada;
+  });
+
+  const citasCanceladas = jsonData.data.length - citasValidas.length;
   console.log(
-    `❌ Citas sin teléfono: ${jsonData.data.length - citasValidas.length}\n`,
+    `✅ Citas válidas (con teléfono y NO canceladas): ${citasValidas.length}`,
   );
+  if (citasCanceladas > 0) {
+    console.log(
+      `🚫 Citas omitidas (sin teléfono o canceladas): ${citasCanceladas}\n`,
+    );
+  } else {
+    console.log(
+      `❌ Citas sin teléfono: ${jsonData.data.length - citasValidas.length}\n`,
+    );
+  }
 
   if (citasValidas.length === 0) {
     console.log("⚠️  No hay citas con teléfono para enviar\n");
