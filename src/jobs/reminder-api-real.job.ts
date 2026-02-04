@@ -33,14 +33,33 @@ function formatearFecha(fechaStr: string): string {
 function extraerPrimerTelefono(telefono: string): string {
   if (!telefono) return "";
 
-  const numeros = telefono.split(" - ");
-  const primerNumero = numeros[0].trim();
+  // Limpiar el string completo primero
+  telefono = telefono.trim();
 
-  if (primerNumero && !primerNumero.startsWith("+")) {
-    return `+57${primerNumero}`;
+  // Si ya empieza con +57, extraer solo el número después del +57
+  if (telefono.startsWith("+57")) {
+    const numeroSolo = telefono
+      .substring(3)
+      .split(/[\s\-\/]+/)[0]
+      .replace(/[^\d]/g, "");
+    if (numeroSolo.length >= 10) {
+      return `+57${numeroSolo}`;
+    }
   }
 
-  return primerNumero;
+  // Dividir por cualquier separador: guiones (-), barras (/), espacios múltiples
+  const numeros = telefono.split(/[\s\-\/]+/);
+
+  // Tomar el primer número y limpiar cualquier carácter que no sea dígito
+  const primerNumero = numeros[0].trim().replace(/[^\d]/g, "");
+
+  // Validar que tenga al menos 10 dígitos (números colombianos)
+  if (primerNumero.length < 10) {
+    return "";
+  }
+
+  // Agregar +57 si no tiene código de país
+  return `+57${primerNumero}`;
 }
 
 /**

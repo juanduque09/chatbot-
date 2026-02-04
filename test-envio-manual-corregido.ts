@@ -10,8 +10,8 @@ dayjs.locale("es");
 // 🎯 CONFIGURACIÓN DE PRUEBA
 // ============================================
 const MODO_PRUEBA = false; // Si es true, solo muestra sin enviar
-const NUMERO_PRUEBA = "+573135481803"; // Tu número para pruebas
-const SOLO_ESTE_NUMERO = false; // Si es true, solo envía a NUMERO_PRUEBA
+const NUMERO_PRUEBA = "+573216779467"; // Tu número para pruebas
+const SOLO_ESTE_NUMERO = true; // Si es true, solo envía a NUMERO_PRUEBA
 
 function formatearHora(hora: number, ampm: string): string {
   const horaStr = hora.toString().padStart(4, "0");
