@@ -3,7 +3,10 @@ import path from "path";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import metaWhatsappService from "./services/meta-whatsapp.service";
+import metaTemplateService from "./services/meta-template.service";
 import { guardarMensaje } from "./database/db";
+import config from "./config/env";
+import { esNumeroValido } from "./utils/phone.utils";
 
 dayjs.locale("es");
 
@@ -136,7 +139,7 @@ async function main() {
 
   console.log(`📊 Total de citas en el JSON: ${jsonData.data.length}\n`);
 
-  // Filtrar citas con teléfono y que NO estén canceladas
+  // Filtrar citas con teléfono válido y que NO estén canceladas
   const citasValidas = jsonData.data.filter((c: CitaAPI) => {
     const estadoLower = (c.estado || "").toLowerCase();
     const estaCancelada =
@@ -145,7 +148,10 @@ async function main() {
       estadoLower === "cancelado" ||
       estadoLower === "cancelada";
 
-    return c.telefono && !estaCancelada;
+    // Validar que el teléfono exista y sea válido (acepta múltiples formatos)
+    const tieneNumeroValido = c.telefono && esNumeroValido(c.telefono);
+
+    return tieneNumeroValido && !estaCancelada;
   });
 
   const citasCanceladas = jsonData.data.length - citasValidas.length;
@@ -167,10 +173,12 @@ async function main() {
     return;
   }
 
-  // Usar la nueva plantilla completa v2 (PENDIENTE de aprobación ⏳)
-  const templateName = "recordatorio_cita_completo_v2";
+  // Usar la nueva plantilla v4 (con 10 parámetros)
+  const templateName = config.meta.templateName; // Lee desde .env
   console.log(`📝 Usando plantilla: ${templateName}\n`);
-  console.log(`✅ Esta plantilla incluye dirección y observaciones\n`);
+  console.log(
+    `✅ Esta plantilla incluye dirección, observaciones y WhatsApp de contacto\n`,
+  );
   console.log(
     `⚠️  Asegúrate de que la plantilla esté APROBADA antes de ejecutar\n`,
   );
@@ -199,18 +207,37 @@ async function main() {
     console.log(`💳 Entidad:     ${procesada.entidad}`);
     console.log(`📝 Observación: ${procesada.observacion}`);
 
-    // Crear parámetros para la plantilla (9 parámetros CON dirección y observaciones)
-    const parametros = [
-      procesada.nombre, // {{1}}
-      procesada.fecha, // {{2}}
-      procesada.hora, // {{3}}
-      procesada.medico, // {{4}}
-      procesada.sede, // {{5}}
-      procesada.direccion, // {{6}} - NUEVO: Dirección
-      procesada.tipo, // {{7}}
-      procesada.entidad, // {{8}}
-      procesada.observacion, // {{9}} - Observaciones
-    ];
+    // Crear parámetros usando el servicio (detecta automáticamente 9 o 10 parámetros según plantilla)
+    const citaParaPlantilla = {
+      nombre: procesada.nombre,
+      requerida: cita.requerida,
+      hora: cita.hora,
+      ampm: cita.ampm,
+      medico: procesada.medico,
+      sede: procesada.sede,
+      tipo: procesada.tipo,
+      entidad: procesada.entidad,
+      observacion: procesada.observacion,
+      telefono: procesada.telefono,
+      id: procesada.citaId,
+      consultorio: cita.consultorio,
+      td: cita.td,
+      documento: cita.documento,
+      estado: cita.estado,
+      motivoCancela: cita.motivoCancela,
+      fechaSolicita: cita.fechaSolicita,
+      concepto: cita.concepto,
+      orden: cita.orden,
+      creadaPor: cita.creadaPor,
+      modificadaPor: cita.modificadaPor,
+      actualizada: cita.actualizada,
+      impresa: cita.impresa,
+    };
+
+    const parametros = metaTemplateService.crearParametros(citaParaPlantilla);
+
+    console.log(`\n📋 Parámetros generados: ${parametros.length}`);
+    console.log(`   WhatsApp contacto: ${parametros[9] || "N/A"}`);
 
     console.log(`\n📤 Enviando mensaje...`);
 

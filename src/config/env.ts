@@ -21,6 +21,10 @@ interface Config {
     schedule: string;
     timezone: string;
   };
+  whatsapp: {
+    contacto: string;
+    telefonoFijo: string;
+  };
   server: {
     port: number;
     webhookPath: string;
@@ -42,11 +46,16 @@ const config: Config = {
     appSecret: process.env.META_APP_SECRET || "",
     webhookVerifyToken:
       process.env.META_WEBHOOK_VERIFY_TOKEN || "mi_token_secreto_2024",
-    templateName: process.env.META_TEMPLATE_NAME || "recordatorio_cita_v1",
+    templateName:
+      process.env.META_TEMPLATE_NAME || "recordatorio_cita_detallado",
   },
   cron: {
     schedule: process.env.CRON_SCHEDULE || "0 18 * * *", // 6 PM diario por defecto
     timezone: process.env.TZ || "America/Bogota",
+  },
+  whatsapp: {
+    contacto: process.env.WHATSAPP_CONTACTO || "320 680 3362",
+    telefonoFijo: process.env.TELEFONO_FIJO || "606 3253000",
   },
   server: {
     port: parseInt(process.env.PORT || "3000", 10),
@@ -70,7 +79,7 @@ export function validateConfig(): void {
     console.warn("⚠️  Faltan las siguientes variables de entorno:");
     missing.forEach((v) => console.warn(`   - ${v.key}`));
     console.warn(
-      "\n💡 Configura las credenciales de Meta WhatsApp Business API en .env"
+      "\n💡 Configura las credenciales de Meta WhatsApp Business API en .env",
     );
     console.warn("📖 Lee docs/SETUP-META-WHATSAPP.md para más info\n");
     // No detener el servidor, solo advertir

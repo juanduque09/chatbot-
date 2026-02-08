@@ -11,6 +11,34 @@ import config from "../config/env";
  */
 class MetaTemplateService {
   /**
+   * Mapeo de direcciones por sede
+   */
+  private readonly direccionesPorSede: Record<string, string> = {
+    PEREIRA: "Av Circunvalar Carrera 13 #9-42",
+    DOSQUEBRADAS: "Carrera 16 #16-40 barrio valher",
+    // Agregar más sedes según sea necesario
+  };
+
+  /**
+   * Obtener dirección por sede
+   * Usa .includes() para mayor flexibilidad (ej: "PEREIRA - CENTRO" también funciona)
+   */
+  private obtenerDireccion(sede: string): string {
+    const sedeUpper = sede.toUpperCase();
+
+    // Buscar coincidencia parcial en las sedes configuradas
+    for (const [nombreSede, direccion] of Object.entries(
+      this.direccionesPorSede,
+    )) {
+      if (sedeUpper.includes(nombreSede)) {
+        return direccion;
+      }
+    }
+
+    return "Consultar en recepción";
+  }
+
+  /**
    * Crear parámetros para plantilla de recordatorio
    *
    * Mapeo de plantilla:
@@ -38,6 +66,101 @@ class MetaTemplateService {
       cita.tipo, // {{7}}
       cita.entidad, // {{8}}
     ];
+  }
+
+  /**
+   * Crear parámetros para plantilla de recordatorio detallado
+   *
+   * Mapeo de plantilla (recordatorio_cita_detallado):
+   * {{1}} = Nombre del paciente
+   * {{2}} = Fecha (ej: "miércoles, 22 de octubre de 2025")
+   * {{3}} = Hora (ej: "7:55 AM")
+   * {{4}} = Nombre del médico
+   * {{5}} = Sede
+   * {{6}} = Dirección
+   * {{7}} = Tipo de cita
+   * {{8}} = Entidad
+   * {{9}} = Observaciones
+   */
+  crearParametrosRecordatorioDetallado(cita: Cita): string[] {
+    const horaFormateada = parseHora(cita.hora);
+    const fechaLegible = formatearFechaLegible(cita.requerida);
+    const diaSemana = getDiaSemana(cita.requerida);
+    const direccion = this.obtenerDireccion(cita.sede);
+
+    return [
+      cita.nombre, // {{1}}
+      `${diaSemana}, ${fechaLegible}`, // {{2}}
+      `${horaFormateada} ${cita.ampm}`, // {{3}}
+      cita.medico, // {{4}}
+      cita.sede, // {{5}}
+      direccion, // {{6}}
+      cita.tipo, // {{7}}
+      cita.entidad, // {{8}}
+      cita.observacion || "Sin observaciones", // {{9}}
+    ];
+  }
+
+  /**
+   * Crear parámetros para plantilla de recordatorio con contacto
+   *
+   * Mapeo de plantilla (recordatorio_cita_contacto):
+   * {{1}} = Nombre del paciente
+   * {{2}} = Fecha (ej: "miércoles, 22 de octubre de 2025")
+   * {{3}} = Hora (ej: "7:55 AM")
+   * {{4}} = Nombre del médico
+   * {{5}} = Sede
+   * {{6}} = Dirección
+   * {{7}} = Tipo de cita
+   * {{8}} = Entidad
+   * {{9}} = Observaciones/Instrucciones
+   * {{10}} = Número de WhatsApp para cancelaciones
+   */
+  crearParametrosRecordatorioContacto(cita: Cita): string[] {
+    const horaFormateada = parseHora(cita.hora);
+    const fechaLegible = formatearFechaLegible(cita.requerida);
+    const diaSemana = getDiaSemana(cita.requerida);
+    const direccion = this.obtenerDireccion(cita.sede);
+
+    // Combinar WhatsApp y teléfono fijo
+    const contacto = `WhatsApp ${config.whatsapp.contacto} o llamando al ${config.whatsapp.telefonoFijo}`;
+
+    return [
+      cita.nombre, // {{1}}
+      `${diaSemana}, ${fechaLegible}`, // {{2}}
+      `${horaFormateada} ${cita.ampm}`, // {{3}}
+      cita.medico, // {{4}}
+      cita.sede, // {{5}}
+      direccion, // {{6}}
+      cita.tipo, // {{7}}
+      cita.entidad, // {{8}}
+      cita.observacion || "Sin instrucciones especiales", // {{9}}
+      contacto, // {{10}}
+    ];
+  }
+
+  /**
+   * Crear parámetros según la plantilla configurada
+   * Este método automáticamente selecciona el formato correcto
+   */
+  crearParametros(cita: Cita): string[] {
+    const templateName = this.obtenerNombrePlantilla();
+
+    if (
+      templateName === "recordatorio_cita_contacto_v5" ||
+      templateName === "recordatorio_cita_contacto_v4" ||
+      templateName === "recordatorio_cita_contacto_v3" ||
+      templateName === "recordatorio_cita_contacto_v1"
+    ) {
+      return this.crearParametrosRecordatorioContacto(cita);
+    }
+
+    if (templateName === "recordatorio_cita_detallado") {
+      return this.crearParametrosRecordatorioDetallado(cita);
+    }
+
+    // Por defecto usa la plantilla original
+    return this.crearParametrosRecordatorio(cita);
   }
 
   /**
