@@ -28,7 +28,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
   try {
     logger.info("═══════════════════════════════════════════════════");
     logger.info(
-      "🚀 Iniciando proceso de recordatorios automáticos (Meta WhatsApp API)"
+      "🚀 Iniciando proceso de recordatorios automáticos (Meta WhatsApp API)",
     );
     logger.info("═══════════════════════════════════════════════════");
 
@@ -74,7 +74,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
       logger.info(
         `🔄 Se omitieron ${
           citasParaRecordar.length - citasSinEnviar.length
-        } citas (ya enviadas)`
+        } citas (ya enviadas)`,
       );
     }
 
@@ -95,7 +95,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
     const mensajes = citasSinEnviar.map((cita) => ({
       telefono: cita.telefono,
       templateName,
-      parametros: metaTemplateService.crearParametrosRecordatorio(cita),
+      parametros: metaTemplateService.crearParametros(cita),
       nombre: cita.nombre,
       citaId: cita.id,
       cita, // Para guardar en DB
@@ -141,7 +141,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
     logger.info(`   ✅ Exitosos: ${mensajesExitosos}`);
     logger.info(`   ❌ Fallidos: ${mensajesFallidos}`);
     logger.info(
-      `   ⏱️  Duración: ${((Date.now() - inicioEjecucion) / 1000).toFixed(2)}s`
+      `   ⏱️  Duración: ${((Date.now() - inicioEjecucion) / 1000).toFixed(2)}s`,
     );
     logger.info("═══════════════════════════════════════════════════");
 
@@ -184,13 +184,13 @@ export function iniciarCronJob(): void {
       logger.info(
         `\n🕐 Cron job ejecutado: ${new Date().toLocaleString("es-CO", {
           timeZone: config.cron.timezone,
-        })}`
+        })}`,
       );
       await ejecutarRecordatorios();
     },
     {
       timezone: config.cron.timezone,
-    }
+    },
   );
 
   logger.info("✅ Cron job iniciado correctamente");

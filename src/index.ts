@@ -119,9 +119,7 @@ app.post("/api/prueba-whatsapp", async (req: Request, res: Response) => {
     // Si hay datos de cita completos, usar plantilla
     if (citaData.nombre && citaData.medico && citaData.sede) {
       const templateName = metaTemplateService.obtenerNombrePlantilla();
-      const parametros = metaTemplateService.crearParametrosRecordatorio(
-        citaData as any,
-      );
+      const parametros = metaTemplateService.crearParametros(citaData as any);
 
       const resultado = await metaWhatsappService.enviarMensajePlantilla(
         telefono,

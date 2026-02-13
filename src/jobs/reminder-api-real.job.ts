@@ -29,18 +29,39 @@ function formatearFecha(fechaStr: string): string {
 
 /**
  * Extrae el primer número de teléfono y agrega +57 si es necesario
+ * Limita a exactamente 10 dígitos (formato colombiano)
  */
 function extraerPrimerTelefono(telefono: string): string {
   if (!telefono) return "";
 
-  const numeros = telefono.split(" - ");
-  const primerNumero = numeros[0].trim();
+  // Limpiar el string completo primero
+  telefono = telefono.trim();
 
-  if (primerNumero && !primerNumero.startsWith("+")) {
-    return `+57${primerNumero}`;
+  // Si ya empieza con +57, extraer solo el número después del +57
+  if (telefono.startsWith("+57")) {
+    const numeroSolo = telefono
+      .substring(3)
+      .split(/[\s\-\/]+/)[0]
+      .replace(/[^\d]/g, "");
+    // Tomar exactamente los primeros 10 dígitos
+    if (numeroSolo.length >= 10) {
+      return `+57${numeroSolo.substring(0, 10)}`;
+    }
   }
 
-  return primerNumero;
+  // Dividir por cualquier separador: guiones (-), barras (/), espacios múltiples
+  const numeros = telefono.split(/[\s\-\/]+/);
+
+  // Tomar el primer número y limpiar cualquier carácter que no sea dígito
+  const primerNumero = numeros[0].trim().replace(/[^\d]/g, "");
+
+  // Validar que tenga al menos 10 dígitos (números colombianos)
+  if (primerNumero.length < 10) {
+    return "";
+  }
+
+  // Tomar exactamente los primeros 10 dígitos y agregar +57
+  return `+57${primerNumero.substring(0, 10)}`;
 }
 
 /**
@@ -74,8 +95,10 @@ function obtenerDireccion(sede: string): string {
 
 /**
  * Procesa una cita para enviar mensaje
+ * @param cita Cita del API
+ * @param fechaConsultada Fecha que SE CONSULTÓ (no confiar en cita.requerida del API)
  */
-function procesarCita(cita: any) {
+function procesarCita(cita: any, fechaConsultada: string) {
   // Extraer solo el primer nombre
   const nombreCompleto = cita.nombre || "";
   const primerNombre = nombreCompleto.split(" ")[0];
@@ -84,7 +107,7 @@ function procesarCita(cita: any) {
     citaId: cita.id,
     telefono: extraerPrimerTelefono(cita.telefono),
     nombre: primerNombre,
-    fecha: formatearFecha(cita.requerida),
+    fecha: formatearFecha(fechaConsultada), // ⭐ Usar fecha consultada, NO cita.requerida (tiene bug en API)
     hora: formatearHora(cita.hora, cita.ampm),
     medico: cita.medico,
     sede: cita.sede,
@@ -92,7 +115,7 @@ function procesarCita(cita: any) {
     tipo: cita.tipo || "CONSULTA",
     entidad: cita.entidad || "PARTICULAR",
     observacion: limpiarObservacion(cita.observacion),
-    fechaCita: cita.requerida,
+    fechaCita: fechaConsultada, // ⭐ Usar fecha consultada para guardar en BD
   };
 }
 
@@ -147,7 +170,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
 
     // 4. Filtrar citas que ya fueron enviadas (evitar duplicados)
     const citasSinEnviar = citasActivas.filter((cita) => {
-      return !yaSeEnvioMensaje(cita.id, cita.requerida);
+      return !yaSeEnvioMensaje(cita.id, manana); // ⭐ Usar fecha consultada, no cita.requerida
     });
 
     if (citasSinEnviar.length < citasActivas.length) {
@@ -162,7 +185,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
     }
 
     // 5. Enviar mensajes
-    const templateName = "recordatorio_cita_completo_v2";
+    const templateName = config.meta.templateName;
     logger.info(`📝 Usando plantilla: ${templateName}`);
     logger.info(`📤 Enviando ${citasSinEnviar.length} mensajes...\n`);
 
@@ -170,7 +193,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
     let fallidos = 0;
 
     for (const cita of citasSinEnviar) {
-      const procesada = procesarCita(cita);
+      const procesada = procesarCita(cita, manana); // ⭐ Pasar fecha consultada
 
       // Verificar que tenga número válido
       if (!procesada.telefono) {
@@ -181,17 +204,18 @@ export async function ejecutarRecordatorios(): Promise<void> {
       }
 
       try {
-        // Crear parámetros para la plantilla
+        // Crear parámetros para la plantilla (10 parámetros)
         const parametros = [
-          procesada.nombre,
-          procesada.fecha,
-          procesada.hora,
-          procesada.medico,
-          procesada.sede,
-          procesada.direccion,
-          procesada.tipo,
-          procesada.entidad,
-          procesada.observacion,
+          procesada.nombre, // {{1}}
+          procesada.fecha, // {{2}}
+          procesada.hora, // {{3}}
+          procesada.medico, // {{4}}
+          procesada.sede, // {{5}}
+          procesada.direccion, // {{6}}
+          procesada.tipo, // {{7}}
+          procesada.entidad, // {{8}}
+          procesada.observacion, // {{9}}
+          `WhatsApp ${config.whatsapp.contacto} o llamando al ${config.whatsapp.telefonoFijo}`, // {{10}}
         ];
 
         // Enviar mensaje
