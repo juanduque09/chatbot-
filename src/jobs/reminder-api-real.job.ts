@@ -29,6 +29,7 @@ function formatearFecha(fechaStr: string): string {
 
 /**
  * Extrae el primer número de teléfono y agrega +57 si es necesario
+ * Limita a exactamente 10 dígitos (formato colombiano)
  */
 function extraerPrimerTelefono(telefono: string): string {
   if (!telefono) return "";
@@ -42,8 +43,9 @@ function extraerPrimerTelefono(telefono: string): string {
       .substring(3)
       .split(/[\s\-\/]+/)[0]
       .replace(/[^\d]/g, "");
+    // Tomar exactamente los primeros 10 dígitos
     if (numeroSolo.length >= 10) {
-      return `+57${numeroSolo}`;
+      return `+57${numeroSolo.substring(0, 10)}`;
     }
   }
 
@@ -58,8 +60,8 @@ function extraerPrimerTelefono(telefono: string): string {
     return "";
   }
 
-  // Agregar +57 si no tiene código de país
-  return `+57${primerNumero}`;
+  // Tomar exactamente los primeros 10 dígitos y agregar +57
+  return `+57${primerNumero.substring(0, 10)}`;
 }
 
 /**
@@ -183,7 +185,7 @@ export async function ejecutarRecordatorios(): Promise<void> {
     }
 
     // 5. Enviar mensajes
-    const templateName = "recordatorio_cita_completo_v2";
+    const templateName = config.meta.templateName;
     logger.info(`📝 Usando plantilla: ${templateName}`);
     logger.info(`📤 Enviando ${citasSinEnviar.length} mensajes...\n`);
 
@@ -202,17 +204,18 @@ export async function ejecutarRecordatorios(): Promise<void> {
       }
 
       try {
-        // Crear parámetros para la plantilla
+        // Crear parámetros para la plantilla (10 parámetros)
         const parametros = [
-          procesada.nombre,
-          procesada.fecha,
-          procesada.hora,
-          procesada.medico,
-          procesada.sede,
-          procesada.direccion,
-          procesada.tipo,
-          procesada.entidad,
-          procesada.observacion,
+          procesada.nombre, // {{1}}
+          procesada.fecha, // {{2}}
+          procesada.hora, // {{3}}
+          procesada.medico, // {{4}}
+          procesada.sede, // {{5}}
+          procesada.direccion, // {{6}}
+          procesada.tipo, // {{7}}
+          procesada.entidad, // {{8}}
+          procesada.observacion, // {{9}}
+          `WhatsApp ${config.whatsapp.contacto} o llamando al ${config.whatsapp.telefonoFijo}`, // {{10}}
         ];
 
         // Enviar mensaje
